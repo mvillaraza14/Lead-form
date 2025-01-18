@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Information Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+        form {
+            max-width: 400px;
+            margin: 20px auto;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #leadsDashboard {
+            max-width: 90%;
+            margin: 40px auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        #filterSection {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+        }
+        #filterSection input, #filterSection select, #filterSection button {
+            width: auto;
+            padding: 8px 10px;
+            margin: 0;
+        }
+        #leadsTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #leadsTable th, #leadsTable td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+        }
+        #leadsTable th {
+            background-color: #f0f0f0;
+        }
+        #leadsTable tfoot td {
+            font-weight: bold;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <h2>Customer Information Form</h2>
+    <form id="customerForm">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="phone">Phone Number:</label>
+        <input type="tel" id="phone" name="phone" required>
+
+        <label for="address">Address:</label>
+        <input type="text" id="address" name="address" required>
+
+        <label for="jobType">Job Type:</label>
+        <input type="text" id="jobType" name="jobType" required>
+
+        <label for="notes">Notes:</label>
+        <textarea id="notes" name="notes" rows="4"></textarea>
+
+        <label for="city">City:</label>
+        <select id="city" name="city">
+            <option value="Sydney">Sydney</option>
+            <option value="Brisbane">Brisbane</option>
+            <option value="Melbourne">Melbourne</option>
+        </select>
+
+        <button type="button" onclick="addLead()">Copy to Clipboard</button>
+    </form>
+
+    <div id="leadsDashboard">
+        <h3>Leads Dashboard</h3>
+        <div id="filterSection">
+            <label for="filterDate">Date:</label>
+            <input type="date" id="filterDate">
+
+            <label for="filterPaymentMode">Mode of Payment:</label>
+            <select id="filterPaymentMode">
+                <option value="">All</option>
+                <option value="Cash">Cash</option>
+                <option value="Card">Card</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Mixed">Mixed</option>
+            </select>
+
+            <label for="filterTechnician">Technician:</label>
+            <select id="filterTechnician">
+                <option value="">All</option>
+            </select>
+
+            <label for="filterStatus">Status:</label>
+            <select id="filterStatus">
+                <option value="">All</option>
+            </select>
+
+            <label for="filterCity">City:</label>
+            <select id="filterCity">
+                <option value="">All</option>
+                <option value="Sydney">Sydney</option>
+                <option value="Brisbane">Brisbane</option>
+                <option value="Melbourne">Melbourne</option>
+            </select>
+
+            <button type="button" onclick="applyFilters()">Apply Filters</button>
+        </div>
+        <table id="leadsTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Timestamp</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Address</th>
+                    <th>City</th>
+                    <th>Job Type</th>
+                    <th>Notes</th>
+                    <th>Google Maps Link</th>
+                    <th>Total Paid ($)</th>
+                    <th>Total Parts ($)</th>
+                    <th>Company Parts ($)</th>
+                    <th>Mode of Payment</th>
+                    <th>Technician</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="9">Total</td>
+                    <td id="totalPaidSum">$0.00</td>
+                    <td id="totalPartsSum">$0.00</td>
+                    <td id="companyPartsSum">$0.00</td>
+                    <td colspan="3"></td>
+                </tr>
+            </tfoot>
+        </table>
+        <button onclick="clearLocalStorage()">Clear All Data</button>
+    </div>
+
+    <script>
+        const technicians = [
+            "AIDEN", "ARAD", "BORIS", "DAVID", "DAVE", "DORON", "EITAN", "ELAY", "ELI", "GILAD", "ISRAEL", "NADAV", 
+            "MHNA", "YUVI", "DAVI", "EYAL", "HOMI", "GRIFFIN", "MIKE", "ROY", "STAV", "YEDID", "SHAHAR", "GAL", "MARK", 
+            "DORON", "RON", "MOSHE", "HOMI"
+        ];
+
+        const statuses = [
+            "COMPLETED", "CANCEL", "ONGOING", "WAITING FOR PAYMENT", "ON HOLD", "CAR KEY", "NOT BOOKED"
+        ];
+
+        const paymentModes = ["Cash", "Card", "Bank Transfer", "Mixed"];
+
+        let leadCounter = 0;
+
+        function populateDropdowns() {
+            const technicianDropdown = document.getElementById('filterTechnician');
+            technicians.forEach(tech => {
+                const option = document.createElement('option');
+                option.value = tech;
+                option.textContent = tech;
+                technicianDropdown.appendChild(option);
+            });
+
+            const statusDropdown = document.getElementById('filterStatus');
+            statuses.forEach(status => {
+                const option = document.createElement('option');
+                option.value = status;
+                option.textContent = status;
+                statusDropdown.appendChild(option);
+            });
+        }
+        async function sendDataToAirtable(data) {
+    const response = await fetch('https://api.airtable.com/v0/patCNC00aJIF2PMQs.e884ddeab131a7ec67e5c14a3383844f0e34666b719da570ba8ff2d380a94b42/Table%201', {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer patCNC00aJIF2PMQs.e884ddeab131a7ec67e5c14a3383844f0e34666b719da570ba8ff2d380a94b42`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fields: data }),
+    });
+
+    if (response.ok) {
+        alert('Data synced with Airtable!');
+    } else {
+        alert('Failed to sync data.');
+    }
+}
+
+        
+
+        function addLead() {
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            const address = document.getElementById('address').value;
+            const jobType = document.getElementById('jobType').value;
+            const notes = document.getElementById('notes').value;
+            const city = document.getElementById('city').value;
+
+            const googleMapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+
+            navigator.clipboard.writeText(
+                `Customer Information:\n\n` +
+                `Name: ${name}\n` +
+                `Phone: ${phone}\n` +
+                `Address: ${address}\n` +
+                `City: ${city}\n` +
+                `Job Type: ${jobType}\n` +
+                `Notes: ${notes}\n\n` +
+                `Google Maps Link: ${googleMapsLink}`
+            ).then(() => {
+                alert('Customer information copied to clipboard!');
+
+                const timestamp = new Date().toLocaleString();
+                const leads = JSON.parse(localStorage.getItem('leads')) || [];
+                const newLead = {
+                    timestamp,
+                    name,
+                    phone,
+                    address,
+                    city,
+                    jobType,
+                    notes,
+                    googleMapsLink,
+                    totalPaid: 0,
+                    totalParts: 0,
+                    companyParts: 0,
+                    paymentMode: '',
+                    technician: '',
+                    status: ''
+                };
+
+                leads.push(newLead);
+                localStorage.setItem('leads', JSON.stringify(leads));
+                loadLeads();
+
+        
+            });
+        }
+
+        function loadLeads() {
+            const leads = JSON.parse(localStorage.getItem('leads')) || [];
+            const tableBody = document.querySelector('#leadsTable tbody');
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            let totalPaid = 0, totalParts = 0, companyParts = 0;
+
+            leads.forEach((lead, index) => {
+                const newRow = document.createElement('tr');
+
+                newRow.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${lead.timestamp}</td>
+                    <td>${lead.name}</td>
+                    <td>${lead.phone}</td>
+                    <td>${lead.address}</td>
+                    <td>${lead.city}</td>
+                    <td>${lead.jobType}</td>
+                    <td>${lead.notes}</td>
+                    <td><a href="${lead.googleMapsLink}" target="_blank">View</a></td>
+                    <td><input type="number" value="${lead.totalPaid}" step="0.01" onchange="updateLead(${index}, 'totalPaid', this.value)"></td>
+                    <td><input type="number" value="${lead.totalParts}" step="0.01" onchange="updateLead(${index}, 'totalParts', this.value)"></td>
+                    <td><input type="number" value="${lead.companyParts}" step="0.01" onchange="updateLead(${index}, 'companyParts', this.value)"></td>
+                    <td>
+                        <select onchange="updateLead(${index}, 'paymentMode', this.value)">
+                            ${paymentModes.map(mode => `<option value="${mode}" ${lead.paymentMode === mode ? 'selected' : ''}>${mode}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td>
+                        <select onchange="updateLead(${index}, 'technician', this.value)">
+                            ${technicians.map(tech => `<option value="${tech}" ${lead.technician === tech ? 'selected' : ''}>${tech}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td>
+                        <select onchange="updateLead(${index}, 'status', this.value)">
+                            ${statuses.map(status => `<option value="${status}" ${lead.status === status ? 'selected' : ''}>${status}</option>`).join('')}
+                        </select>
+                    </td>
+                `;
+
+                tableBody.appendChild(newRow);
+
+                totalPaid += parseFloat(lead.totalPaid || 0);
+                totalParts += parseFloat(lead.totalParts || 0);
+                companyParts += parseFloat(lead.companyParts || 0);
+            });
+
+            // Update totals
+            document.getElementById('totalPaidSum').textContent = `$${totalPaid.toFixed(2)}`;
+            document.getElementById('totalPartsSum').textContent = `$${totalParts.toFixed(2)}`;
+            document.getElementById('companyPartsSum').textContent = `$${companyParts.toFixed(2)}`;
+        }
+
+        function updateLead(index, field, value) {
+            const leads = JSON.parse(localStorage.getItem('leads')) || [];
+            leads[index][field] = field.includes('total') ? parseFloat(value) || 0 : value;
+            localStorage.setItem('leads', JSON.stringify(leads));
+            loadLeads();
+        }
+
+        function clearLocalStorage() {
+            if (confirm('Are you sure you want to clear all data?')) {
+                localStorage.removeItem('leads');
+                loadLeads(); // Rebuild the table to show no data
+            }
+        }
+
+        function applyFilters() {
+            const date = document.getElementById('filterDate').value;
+            const paymentMode = document.getElementById('filterPaymentMode').value;
+            const technician = document.getElementById('filterTechnician').value;
+            const status = document.getElementById('filterStatus').value;
+            const city = document.getElementById('filterCity').value;
+
+            const allLeads = JSON.parse(localStorage.getItem('leads')) || [];
+            const filteredLeads = allLeads.filter(lead => {
+                const matchesDate = date ? new Date(lead.timestamp).toISOString().split('T')[0] === date : true;
+                const matchesPaymentMode = paymentMode ? lead.paymentMode === paymentMode : true;
+                const matchesTechnician = technician ? lead.technician === technician : true;
+                const matchesStatus = status ? lead.status === status : true;
+                const matchesCity = city ? lead.city === city : true;
+
+                return matchesDate && matchesPaymentMode && matchesTechnician && matchesStatus && matchesCity;
+            });
+
+            localStorage.setItem('filteredLeads', JSON.stringify(filteredLeads));
+            loadLeads();
+        }
+
+        window.onload = () => {
+            populateDropdowns();
+            loadLeads();
+        };
+    </script>
+
+    
+</body>
+</html>
+
+
+
